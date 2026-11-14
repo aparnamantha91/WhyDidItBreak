@@ -1,6 +1,8 @@
 import { useStore } from "../store";
 
 const SPEEDS: [string, number][] = [
+  ["0.1×", 4500],
+  ["0.25×", 1800],
   ["0.5×", 900],
   ["1×", 450],
   ["2×", 220],
@@ -14,7 +16,7 @@ export function Toolbar() {
   const err = s.res?.error;
   return (
     <div className="toolbar">
-      <button className="icon-btn" title="Lessons" onClick={s.toggleLessons}>
+      <button className="icon-btn" title="Problems" onClick={s.togglePanel}>
         ☰
       </button>
       <div className="brand">
@@ -31,6 +33,24 @@ export function Toolbar() {
       <button className="run-btn" onClick={s.run} disabled={s.running} title="Run (Ctrl/⌘ + Enter)">
         {s.running ? <span className="spinner small" /> : "▶"} Run
       </button>
+      {s.problem && (!s.viewing || s.viewing.kind === "solution") && (
+        <select className="speed" value={s.testIndex} onChange={(e) => s.setTest(Number(e.target.value))} title="Which test Run traces">
+          {Array.from({ length: s.submitRes && !s.submitRes.fatal ? s.problem.total : s.problem.cases.length }, (_, k) => (
+            <option key={k} value={k}>
+              test {k + 1}
+            </option>
+          ))}
+          {s.testIndex >= (s.submitRes && !s.submitRes.fatal ? s.problem.total : s.problem.cases.length) && (
+            <option value={s.testIndex}>test {s.testIndex + 1}</option>
+          )}
+          <option value={-1}>my input</option>
+        </select>
+      )}
+      {s.problem && (
+        <button className="submit-btn" onClick={s.submit} disabled={s.submitting || s.running || !!s.viewing} title="Check every test">
+          {s.submitting ? <span className="spinner small" /> : "✔"} Submit
+        </button>
+      )}
       <div className="transport">
         <button onClick={() => s.setStep(0)} disabled={!n} title="First step (Home)">⏮</button>
         <button onClick={() => s.stepBy(-1)} disabled={!n} title="Back (←)">◀</button>
@@ -53,7 +73,7 @@ export function Toolbar() {
           💥 jump to crash
         </button>
       )}
-      {s.dirty && s.res && <span className="stale">code changed — run again</span>}
+      {s.dirty && s.res && <span className="stale">changed — run again</span>}
     </div>
   );
 }

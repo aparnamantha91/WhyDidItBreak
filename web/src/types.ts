@@ -118,25 +118,65 @@ export interface Meta {
   loops?: { line: number; end: number; kind: string; names: string[]; cond: string }[];
 }
 
+export interface Verdict {
+  status: "pass" | "wrong" | "error" | "timeout";
+  input: string;
+  expected?: string;
+  got?: string;
+  diff?: string;
+  note?: string;
+  stdout?: string;
+  error?: { type: string; msg: string; line: number | null };
+}
+
 export interface RunResult {
   steps: Step[];
   pool: unknown[];
   stdout: string;
   error: ErrorInfo | null;
   meta: Meta;
+  verdict?: Verdict; // problem mode: how this test case went
+  return_step?: number;
+  truncated?: boolean;
 }
 
-export interface LessonInfo {
+export interface ProblemInfo {
   id: string;
-  level: string;
   title: string;
-  concept: string;
+  level: string;
+  topic: string;
 }
 
-export interface Lesson extends LessonInfo {
-  code: string;
-  buggy: string;
-  expected: string | null;
+export interface ProblemCase {
+  index: number;
+  input: string;
+  expected: string;
+  explain: string | null;
+}
+
+export interface Problem extends ProblemInfo {
+  statement: string;
+  constraints: string[];
+  hints: string[];
+  fn: string;
+  params: string[];
+  starter: string;
+  solution: string;
+  cases: ProblemCase[];
+  total: number;
+  lesson: { id: string; title: string; concept: string; code: string; buggy: string } | null;
+}
+
+export interface SubmitRow extends Omit<Verdict, "status"> {
+  index: number;
+  status: Verdict["status"] | "skipped";
+}
+
+export interface SubmitResult {
+  results: SubmitRow[];
+  passed: number;
+  total: number;
+  fatal?: { type: string; title?: string; why?: string; hint?: string; msg: string };
 }
 
 export interface Snapshot {

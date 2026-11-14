@@ -59,6 +59,16 @@ export function Timeline() {
     // played region
     g.fillStyle = "rgba(56,189,248,0.10)";
     g.fillRect(0, 0, xOf(i), H);
+    // where the solution function returned (problem mode)
+    if (res.return_step !== undefined) {
+      const x = xOf(res.return_step);
+      g.fillStyle = res.verdict?.status === "pass" ? "#34d399" : "#fbbf24";
+      g.beginPath();
+      g.moveTo(x - 5, H);
+      g.lineTo(x + 5, H);
+      g.lineTo(x, H - 8);
+      g.fill();
+    }
     // crash marker
     if (res.error?.step !== undefined) {
       const x = xOf(res.error.step);
@@ -102,6 +112,7 @@ export function Timeline() {
         <div className="tl-tip" style={{ left: `${(hover / Math.max(1, n - 1)) * 100}%` }}>
           step {hover + 1} · line {res.steps[hover].line}
           {res.steps[hover].ev !== "line" ? ` · ${res.steps[hover].ev}` : ""}
+          {hover === res.return_step ? " · result returned" : ""}
         </div>
       )}
     </div>

@@ -208,8 +208,9 @@ def build_line_index(tree):
 # ---------------------------------------------------------------- tracer
 
 class Tracer:
-    def __init__(self, code_obj, line_index, out_buf):
+    def __init__(self, code_obj, line_index, out_buf, ns=None):
         self.code_obj = code_obj
+        self.ns = ns  # set in "driver" mode: the user's functions are called from untraced code
         self.line_index = line_index
         self.out = out_buf
         self.steps: list[dict] = []
@@ -228,10 +229,22 @@ class Tracer:
         chain.reverse()
         return chain
 
+    def fid(self, f):
+        if self.ns is not None and f.f_code.co_name == "<module>":
+            return "global"
+        return str(id(f))
+
     def snapshot(self, frame, event, arg):
         enc = Encoder()
         frames = []
-        for f in self.frames_of(frame):
+        chain = self.frames_of(frame)
+        if self.ns is not None and (not chain or chain[0].f_code.co_name != "<module>"):
+            # called from the driver: there is no module frame on the stack, so show the globals anyway
+            frames.append({
+                "fn": "global", "fid": "global", "line": 0,
+                "vars": {k: enc.enc(v) for k, v in list(self.ns.items()) if _visible_global(k, v)},
+            })
+        for f in chain:
             is_mod = f.f_code.co_name == "<module>"
             src = f.f_globals if is_mod else f.f_locals
             vars_ = {}
@@ -243,7 +256,7 @@ class Tracer:
                 vars_[k] = enc.enc(v)
             frames.append({
                 "fn": "global" if is_mod else f.f_code.co_name,
-                "fid": str(id(f)),
+                "fid": self.fid(f),
                 "line": f.f_lineno,
                 "vars": vars_,
             })
@@ -251,7 +264,7 @@ class Tracer:
             "ev": event,
             "line": frame.f_lineno,
             "fn": frames[-1]["fn"] if frames else "global",
-            "fid": str(id(frame)),
+            "fid": self.fid(frame),
             "frames": frames,
             "out": self.out.tell(),
         }
@@ -313,6 +326,8 @@ class Tracer:
         return self.local_trace
 
     def local_trace(self, frame, event, arg):
+        if self.ns is not None and event == "return" and frame.f_code.co_name == "<module>":
+            return self.local_trace  # the harness runs next; the program isn't over yet
         if event in ("line", "return", "exception"):
             self.record(frame, event, arg)
         return self.local_trace
@@ -352,19 +367,29 @@ def main():
         real_stdout.write(json.dumps(result))
         return
 
+    # optional harness around the user's code (problem mode): both run untraced
+    prelude = req.get("prelude")
+    driver = req.get("driver")
+    prelude_obj = compile(prelude, "<prelude>", "exec") if prelude else None
+    driver_obj = compile(driver, "<driver>", "exec") if driver else None
+
     line_index = build_line_index(tree)
     out = io.StringIO()
-    tracer = Tracer(code_obj, line_index, out)
     ns = {"__name__": "__main__", "__builtins__": __builtins__}
+    tracer = Tracer(code_obj, line_index, out, ns if driver_obj else None)
 
     sys.stdin = io.StringIO(req.get("stdin", "") or "")
     sys.stdout = out
     depth = len(_stack_depth())
     sys.setrecursionlimit(depth + RECURSION_HEADROOM)
     error = None
-    sys.settrace(tracer.trace)
     try:
+        if prelude_obj:
+            exec(prelude_obj, ns)
+        sys.settrace(tracer.trace)
         exec(code_obj, ns)
+        if driver_obj:
+            exec(driver_obj, ns)
     except StepLimit:
         error = {"type": "StepLimit", "msg": f"Program ran more than {MAX_STEPS} steps"}
     except TimeLimit:
@@ -378,6 +403,8 @@ def main():
                 line = tb.tb_lineno
             tb = tb.tb_next
         error = {"type": type(e).__name__, "msg": str(e)[:500], "line": line}
+        if line is None and driver_obj:
+            error["driver"] = True  # raised by the call itself (e.g. wrong number of arguments)
         # first step where this exception object was raised
         for i, x in enumerate(tracer.exc_ids):
             if x == id(e):
@@ -388,7 +415,7 @@ def main():
         sys.stdout = real_stdout
         sys.setrecursionlimit(10_000)
 
-    if error and "step" not in error and tracer.steps:
+    if error and "step" not in error and tracer.steps and not error.get("driver"):
         error["step"] = len(tracer.steps) - 1
         error.setdefault("line", tracer.steps[-1]["line"])
 
@@ -396,6 +423,8 @@ def main():
     result["steps"] = tracer.steps
     result["stdout"] = stdout[:MAX_STDOUT]
     result["error"] = error
+    if "__wdib_result__" in ns:
+        result["result"] = repr(ns["__wdib_result__"])[:20_000]
     real_stdout.write(json.dumps(result, default=repr))
 
 

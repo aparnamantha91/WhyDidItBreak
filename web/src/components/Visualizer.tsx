@@ -16,7 +16,7 @@ import { TreeView } from "../viz/TreeView";
 import { ObjectView } from "../viz/ObjectView";
 import { CallTree } from "../viz/CallTree";
 import { ErrorCard } from "./ErrorCard";
-import { OutputCheck } from "./Console";
+import { VerdictCard } from "./VerdictCard";
 
 function SceneBody({ ctx, scene }: { ctx: Ctx; scene: Scene }) {
   switch (scene.kind) {
@@ -49,6 +49,7 @@ export function Visualizer() {
   const running = useStore((s) => s.running);
   const netError = useStore((s) => s.netError);
   const setStep = useStore((s) => s.setStep);
+  const problem = useStore((s) => s.problem);
   const [overrides, setOverrides] = useState<Record<string, SceneKind>>({});
 
   const ctx: Ctx | null = useMemo(() => {
@@ -67,8 +68,12 @@ export function Visualizer() {
           <div className="spinner" />
         ) : (
           <>
-            <div className="hero-title">Press ▶ Run to trace your code</div>
-            <div className="muted">Every step, every pointer, every swap — and exactly where it breaks.</div>
+            <div className="hero-title">{problem ? `Solve “${problem.title}”, then press ▶ Run` : "Press ▶ Run to trace your code"}</div>
+            <div className="muted">
+              {problem
+                ? "Run traces your function on one test. Submit checks them all and shows you where it breaks."
+                : "Every step, every pointer, every swap — and exactly where it breaks."}
+            </div>
             <div className="hero-keys">
               <kbd>⌘/Ctrl</kbd>+<kbd>Enter</kbd> run · <kbd>←</kbd>
               <kbd>→</kbd> step · <kbd>Space</kbd> play
@@ -81,6 +86,7 @@ export function Visualizer() {
   if (!ctx) {
     return (
       <div className="viz-scroll">
+        <VerdictCard />
         {res.error && <ErrorCard error={res.error} atError total={0} />}
       </div>
     );
@@ -91,8 +97,8 @@ export function Visualizer() {
 
   return (
     <div className="viz-scroll">
+      <VerdictCard />
       {res.error && <ErrorCard error={res.error} atError={ctx.atError} total={res.steps.length} />}
-      <OutputCheck />
       <VarChips ctx={ctx} />
       <AnimatePresence initial={false}>
         {scenes.map((sc) => (

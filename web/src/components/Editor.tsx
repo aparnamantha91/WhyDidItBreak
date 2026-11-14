@@ -12,7 +12,10 @@ loader.config({ monaco });
 type Ed = monaco.editor.IStandaloneCodeEditor;
 
 export function Editor() {
-  const code = useStore((s) => s.code);
+  const own = useStore((s) => s.code);
+  const viewing = useStore((s) => s.viewing);
+  const stopWatching = useStore((s) => s.stopWatching);
+  const code = viewing ? viewing.code : own;
   const setCode = useStore((s) => s.setCode);
   const res = useStore((s) => s.res);
   const i = useStore((s) => s.step);
@@ -120,13 +123,20 @@ export function Editor() {
   }, [res, i, dirty, hoverLine]);
 
   return (
-    <div className="editor">
+    <div className={`editor ${viewing ? "watching" : ""}`}>
+      {viewing && (
+        <div className="watch-bar">
+          <span>👁 {viewing.label} (read-only)</span>
+          <button onClick={stopWatching}>← Back to my code</button>
+        </div>
+      )}
       <MonacoEditor
         language="python"
         value={code}
         onChange={(v) => setCode(v ?? "")}
         onMount={onMount}
         options={{
+          readOnly: !!viewing,
           fontSize: 14,
           fontFamily: "'JetBrains Mono', 'Fira Code', ui-monospace, Menlo, monospace",
           fontLigatures: true,

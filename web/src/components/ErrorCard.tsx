@@ -94,10 +94,18 @@ export function ErrorCard({ error, atError, total }: { error: ErrorInfo; atError
   );
 }
 
-/** Tiny markdown: `code` spans and *emphasis*. */
+/** Tiny markdown: `code` spans, **strong** and *emphasis*. */
 export function md(text: string) {
-  const parts = text.split(/(`[^`]+`|\*[^*]+\*)/g);
+  const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g);
   return parts.map((p, k) =>
-    p.startsWith("`") ? <code key={k}>{p.slice(1, -1)}</code> : p.startsWith("*") ? <em key={k}>{p.slice(1, -1)}</em> : p,
+    p.startsWith("`") ? (
+      <code key={k}>{p.slice(1, -1)}</code>
+    ) : p.startsWith("**") ? (
+      <b key={k}>{p.slice(2, -2)}</b>
+    ) : p.startsWith("*") ? (
+      <em key={k}>{p.slice(1, -1)}</em>
+    ) : (
+      p
+    ),
   );
 }

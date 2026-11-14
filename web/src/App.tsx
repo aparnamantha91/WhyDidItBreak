@@ -7,12 +7,16 @@ import { Editor } from "./components/Editor";
 import { Console } from "./components/Console";
 import { Visualizer } from "./components/Visualizer";
 import { Inspector } from "./components/Inspector";
-import { Lessons } from "./components/Lessons";
+import { Problems } from "./components/Problems";
 
 export default function App() {
-  const showLessons = useStore((s) => s.showLessons);
+  const showPanel = useStore((s) => s.showPanel);
   const playing = useStore((s) => s.playing);
   const speed = useStore((s) => s.speed);
+
+  useEffect(() => {
+    useStore.getState().init();
+  }, []);
 
   // playback loop
   useEffect(() => {
@@ -53,15 +57,15 @@ export default function App() {
       <Toolbar />
       <Timeline />
       <Group orientation="horizontal" className="main">
-        {showLessons && (
+        {showPanel && (
           <>
-            <Panel id="lessons" defaultSize="17%" minSize={180} maxSize="30%">
-              <Lessons />
+            <Panel id="problems" defaultSize="24%" minSize={220} maxSize="40%">
+              <Problems />
             </Panel>
             <Separator className="sep-v" />
           </>
         )}
-        <Panel id="code" defaultSize={showLessons ? "38%" : "45%"} minSize={280}>
+        <Panel id="code" defaultSize={showPanel ? "34%" : "45%"} minSize={280}>
           <Group orientation="vertical">
             <Panel id="editor" defaultSize="74%" minSize={120}>
               <Editor />
@@ -75,11 +79,11 @@ export default function App() {
         <Separator className="sep-v" />
         <Panel id="viz" minSize={340}>
           <Group orientation="vertical">
-            <Panel id="canvas" defaultSize="70%" minSize={160}>
+            <Panel id="canvas" defaultSize="62%" minSize={160}>
               <Visualizer />
             </Panel>
             <Separator className="sep-h" />
-            <Panel id="inspector" defaultSize="30%" minSize={90}>
+            <Panel id="inspector" defaultSize="38%" minSize={90}>
               <Inspector />
             </Panel>
           </Group>
