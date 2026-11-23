@@ -8,14 +8,25 @@ import { Console } from "./components/Console";
 import { Visualizer } from "./components/Visualizer";
 import { Inspector } from "./components/Inspector";
 import { Problems } from "./components/Problems";
+import { Learnings } from "./components/Learnings";
+import { startActivityTracking } from "./activity";
 
 export default function App() {
   const showPanel = useStore((s) => s.showPanel);
   const playing = useStore((s) => s.playing);
   const speed = useStore((s) => s.speed);
 
+  const view = useStore((s) => s.view);
   useEffect(() => {
     useStore.getState().init();
+    startActivityTracking();
+    const onHash = () => useStore.setState({ view: location.hash === "#/learnings" ? "learnings" : "studio" });
+    window.addEventListener("popstate", onHash);
+    window.addEventListener("hashchange", onHash);
+    return () => {
+      window.removeEventListener("popstate", onHash);
+      window.removeEventListener("hashchange", onHash);
+    };
   }, []);
 
   // playback loop
@@ -38,6 +49,7 @@ export default function App() {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target instanceof HTMLElement ? e.target : null;
       if (t && (t.closest(".monaco-editor") || ["INPUT", "SELECT", "TEXTAREA"].includes(t.tagName))) return;
+      if (useStore.getState().view !== "studio") return;
       const s = useStore.getState();
       if (e.key === "ArrowRight") s.stepBy(e.shiftKey ? 10 : 1);
       else if (e.key === "ArrowLeft") s.stepBy(e.shiftKey ? -10 : -1);
@@ -55,6 +67,10 @@ export default function App() {
   return (
     <div className="app">
       <Toolbar />
+      {view === "learnings" ? (
+        <Learnings />
+      ) : (
+      <>
       <Timeline />
       <Group orientation="horizontal" className="main">
         {showPanel && (
@@ -67,11 +83,11 @@ export default function App() {
         )}
         <Panel id="code" defaultSize={showPanel ? "34%" : "45%"} minSize={280}>
           <Group orientation="vertical">
-            <Panel id="editor" defaultSize="74%" minSize={120}>
+            <Panel id="editor" defaultSize="64%" minSize={120}>
               <Editor />
             </Panel>
             <Separator className="sep-h" />
-            <Panel id="console" defaultSize="26%" minSize={60}>
+            <Panel id="console" defaultSize="36%" minSize={90}>
               <Console />
             </Panel>
           </Group>
@@ -79,16 +95,18 @@ export default function App() {
         <Separator className="sep-v" />
         <Panel id="viz" minSize={340}>
           <Group orientation="vertical">
-            <Panel id="canvas" defaultSize="62%" minSize={160}>
+            <Panel id="canvas" defaultSize="72%" minSize={160}>
               <Visualizer />
             </Panel>
             <Separator className="sep-h" />
-            <Panel id="inspector" defaultSize="38%" minSize={90}>
+            <Panel id="inspector" defaultSize="28%" minSize={90}>
               <Inspector />
             </Panel>
           </Group>
         </Panel>
       </Group>
+      </>
+      )}
     </div>
   );
 }

@@ -931,9 +931,49 @@ def permute(nums):
 
 LEVELS = [B, I, A]
 
+# The LeetCode problem each built-in one corresponds to, so the company bank tags it instead of
+# adding a duplicate.
+LEETCODE = {
+    "running-sum": "running-sum-of-1d-array", "max-profit": "best-time-to-buy-and-sell-stock",
+    "binary-search": "binary-search", "search-insert": "search-insert-position", "sort-list": "sort-an-array",
+    "move-zeroes": "move-zeroes", "two-sum-sorted": "two-sum-ii-input-array-is-sorted",
+    "valid-palindrome": "valid-palindrome", "container-water": "container-with-most-water",
+    "longest-unique": "longest-substring-without-repeating-characters", "valid-parentheses": "valid-parentheses",
+    "daily-temperatures": "daily-temperatures", "buy-tickets": "time-needed-to-buy-tickets", "two-sum": "two-sum",
+    "first-unique": "first-unique-character-in-a-string", "group-anagrams": "group-anagrams",
+    "reverse-list": "reverse-linked-list", "middle-node": "middle-of-the-linked-list",
+    "merge-lists": "merge-two-sorted-lists", "fibonacci": "fibonacci-number", "power": "powx-n",
+    "merge-sorted": "merge-sorted-array", "sort-colors": "sort-colors", "max-depth": "maximum-depth-of-binary-tree",
+    "invert-tree": "invert-binary-tree", "validate-bst": "validate-binary-search-tree",
+    "kth-largest": "kth-largest-element-in-an-array", "last-stone": "last-stone-weight",
+    "num-islands": "number-of-islands", "level-order": "binary-tree-level-order-traversal",
+    "flood-fill": "flood-fill", "count-components": "number-of-connected-components-in-an-undirected-graph",
+    "network-delay": "network-delay-time", "provinces": "number-of-provinces", "unique-paths": "unique-paths",
+    "min-path-sum": "minimum-path-sum", "climb-stairs": "climbing-stairs", "house-robber": "house-robber",
+    "coin-change": "coin-change", "subsets": "subsets", "permutations": "permutations",
+}
+for _p in PROBLEMS:
+    _p["lc"] = LEETCODE.get(_p["id"])
+_BUILTIN = {p["id"]: p for p in PROBLEMS}
+
 
 def by_id(problem_id: str) -> dict | None:
-    for p in PROBLEMS:
-        if p["id"] == problem_id:
-            return p
-    return None
+    """A built-in problem, or a ready one from the company bank."""
+    if problem_id in _BUILTIN:
+        return _BUILTIN[problem_id]
+    from . import bank
+
+    return bank.spec(problem_id)
+
+
+def catalog() -> list[dict]:
+    """Light rows (no statements or tests) for every problem: built-in first, then the bank."""
+    from . import bank
+
+    tags = bank.company_tags()
+    rows = [{"id": p["id"], "title": p["title"], "level": p["level"], "topic": p["topic"], "lc": p["lc"],
+             "builtin": True} for p in PROBLEMS]
+    rows += [{**r, "lc": r["id"], "builtin": False} for r in bank.catalog()]
+    for r in rows:
+        r["companies"] = tags.get(r["lc"], []) if r["lc"] else []
+    return rows
