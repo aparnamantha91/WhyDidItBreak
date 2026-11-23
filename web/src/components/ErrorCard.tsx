@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import type { ErrorInfo } from "../types";
+import type { Culprit, ErrorInfo } from "../types";
 import { useStore } from "../store";
 
 export function ErrorCard({ error, atError, total }: { error: ErrorInfo; atError: boolean; total: number }) {
@@ -45,10 +45,25 @@ export function ErrorCard({ error, atError, total }: { error: ErrorInfo; atError
         </div>
       )}
 
-      {error.culprits.length > 0 && (
-        <div className="ec-culprits">
-          <div className="ec-sub">Values involved</div>
-          {error.culprits.map((c) => (
+      {error.culprits.length > 0 && <Culprits culprits={error.culprits} />}
+      {error.hint && (
+        <div className="ec-hint">
+          <span>💡</span>
+          <span>{md(error.hint)}</span>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+/** Variables involved, each with its value history; click a value to jump to the step that set it. */
+export function Culprits({ culprits, title = "Values involved" }: { culprits: Culprit[]; title?: string }) {
+  const setStep = useStore((s) => s.setStep);
+  const setHoverLine = useStore((s) => s.setHoverLine);
+  return (
+    <div className="ec-culprits">
+          <div className="ec-sub">{title}</div>
+          {culprits.map((c) => (
             <div key={c.name} className="culprit">
               <div className="culprit-head">
                 <code className="culprit-name">{c.name}</code>
@@ -83,14 +98,6 @@ export function ErrorCard({ error, atError, total }: { error: ErrorInfo; atError
             </div>
           ))}
         </div>
-      )}
-      {error.hint && (
-        <div className="ec-hint">
-          <span>💡</span>
-          <span>{md(error.hint)}</span>
-        </div>
-      )}
-    </motion.div>
   );
 }
 

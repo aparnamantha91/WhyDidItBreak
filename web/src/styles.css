@@ -222,6 +222,20 @@ kbd { font-family: var(--mono); font-size: 11px; background: #1b2540; border: 1p
 .v-grid { display: grid; grid-template-columns: max-content 1fr; gap: 3px 10px; align-items: baseline; margin: 4px 0; }
 .v-grid code { justify-self: start; font-size: 12.5px; overflow-wrap: anywhere; }
 .v-exp { color: #a7f3d0; }
+.v-got { color: #fecdd3; }
+.mark-bad { background: rgba(244,63,94,.28); color: #fff1f2; border-radius: 3px; padding: 0 2px; outline: 1px solid var(--bad); }
+.mark-good { background: rgba(52,211,153,.22); color: #ecfdf5; border-radius: 3px; padding: 0 2px; outline: 1px solid var(--ok); }
+.mark-bad.missing { padding: 0 6px; }
+.why { margin-top: 6px; padding-top: 9px; border-top: 1px solid rgba(251,191,36,.25); display: grid; gap: 7px; }
+.why-head { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; color: #fbbf24; }
+.why-summary { font-size: 14.5px; line-height: 1.55; color: #fef3c7; font-weight: 600; }
+.why-steps { margin: 0; padding-left: 20px; display: grid; gap: 4px; line-height: 1.55; color: #e2e8f0; }
+.why-jumps { display: flex; flex-wrap: wrap; gap: 6px; }
+.jump { background: rgba(56,189,248,.08); border: 1px solid rgba(56,189,248,.4); color: var(--accent); border-radius: 7px; padding: 3px 9px; font-size: 12px; }
+.jump:hover { background: rgba(56,189,248,.18); }
+.jump.here { border-color: var(--ok); color: #a7f3d0; background: rgba(52,211,153,.1); }
+.line-suspect { background: rgba(251,191,36,.12); border-left: 3px solid var(--warn); }
+.glyph-suspect::before { content: "?"; color: var(--warn); font-weight: 800; font-size: 13px; padding-left: 5px; }
 .v-diff { color: #fde68a; }
 .v-actions { margin-top: 2px; }
 

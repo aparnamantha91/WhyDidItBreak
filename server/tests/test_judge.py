@@ -93,3 +93,39 @@ def test_custom_input_parsing():
         judge.parse_custom(p, "[1, 2]\nfoo(")
     with pytest.raises(ValueError):  # an input the reference solution can't handle either
         judge.trace(p["solution"], p, [5, 3])
+
+
+def _why(pid, code, args):
+    res = judge.trace(code, by_id(pid), args)
+    assert res["verdict"]["status"] == "wrong"
+    return res["verdict"]["why"]
+
+
+def test_why_loop_stops_one_short():
+    why = _why("running-sum", "def running_sum(nums):\n    rsum = [0] * len(nums)\n"
+               "    for i in range(len(nums)-1):\n        if i > 0:\n            csum = rsum[i-1]\n"
+               "        else:\n            csum = 0\n        rsum[i] = csum + nums[i]\n    return rsum\n",
+               [[1, 2, 3, 4]])
+    assert why["kind"] == "never_written" and why["index"] == 3 and why["var"] == "rsum"
+    assert why["line"] == 3  # the loop, where the fix goes
+    text = " ".join(why["detail"])
+    assert "0, 1, 2" in text and "range(3)" in text
+
+
+def test_why_wrong_value_written_and_wrong_length():
+    why = _why("running-sum", "def running_sum(nums):\n    out = []\n    total = 0\n    for x in nums:\n"
+               "        out.append(total)\n        total += x\n    return out\n", [[1, 2, 3, 4]])
+    assert why["kind"] == "wrong_write" and why["index"] == 0 and why["line"] == 5
+    assert [c["name"] for c in why["culprits"]] == ["total"]
+    why = _why("running-sum", "def running_sum(nums):\n    out = []\n    for i in range(1, len(nums)):\n"
+               "        out.append(sum(nums[:i + 1]))\n    return out\n", [[1, 2, 3, 4]])
+    assert why["kind"] == "too_short" and why["index"] == 3
+
+
+def test_why_missing_return_and_scalar():
+    why = _why("find-index", "def find_index(nums, target):\n    for i in range(len(nums)):\n"
+               "        if nums[i] == target:\n            idx = i\n", [[7, 2, 9, 4, 1], 4])
+    assert why["kind"] == "no_return"
+    why = _why("max-profit", "def max_profit(prices):\n    best = 0\n    for p in prices:\n"
+               "        best = max(best, p - prices[0])\n    return best\n", [[7, 1, 5, 3, 6, 4]])
+    assert why["kind"] == "wrong_value" and why["culprits"][0]["name"] == "best"

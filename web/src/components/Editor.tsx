@@ -98,6 +98,18 @@ export function Editor() {
             list.push({ range: new monaco.Range(fr.line, 1, fr.line, 1), options: { isWholeLine: true, className: "line-caller" } });
         }
       }
+      const why = res.verdict?.why;
+      if (why?.line && why.line <= model.getLineCount()) {
+        list.push({
+          range: new monaco.Range(why.line, 1, why.line, 1),
+          options: {
+            isWholeLine: true,
+            className: "line-suspect",
+            glyphMarginClassName: "glyph-suspect",
+            glyphMarginHoverMessage: { value: "Where the wrong answer comes from" },
+          },
+        });
+      }
       if (err?.line && err.line <= model.getLineCount()) {
         list.push({ range: new monaco.Range(err.line, 1, err.line, 1), options: { glyphMarginClassName: "glyph-error" } });
       }

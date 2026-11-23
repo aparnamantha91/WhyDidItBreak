@@ -37,6 +37,10 @@ export function ArrayView({ ctx, scene }: { ctx: Ctx; scene: Scene }) {
   if (ctx.atError && ev?.kind === "oob" && scene.names.includes(ev.var ?? "") && (ev.depth ?? 0) === 0) {
     ghost = { i: ev.idx ?? n, expr: ev.expr ?? "" };
   }
+  // problem mode, wrong answer: the first position of the returned list that's wrong
+  const why = ctx.res.verdict?.why;
+  const wrongAt = why && why.oid === scene.oid && why.index !== undefined ? why.index : null;
+  if (wrongAt !== null && wrongAt >= n && !ghost) ghost = { i: wrongAt, expr: "" };
   const empty = ctx.atError && ev?.kind === "empty" && scene.names.includes(ev.var ?? "");
 
   // what changed on the way into this step
@@ -168,6 +172,21 @@ export function ArrayView({ ctx, scene }: { ctx: Ctx; scene: Scene }) {
           <text x={xOf(ghost.i >= n ? ghost.i : ghost.i < -n ? -1 : ghost.i)} y={bars ? H / 2 : cellTop + cellH / 2 + 4}
             textAnchor="middle" fontSize={18} fill={C.bad}>
             ?
+          </text>
+        </g>
+      )}
+
+      {/* expected value at the first wrong position */}
+      {wrongAt !== null && (
+        <g>
+          {wrongAt < n && (
+            <rect x={xOf(wrongAt) - w * 0.46} y={bars ? 2 : cellTop - 4} width={w * 0.92}
+              height={bars ? H - 2 : cellH + 8} rx={7} fill="none" stroke={C.cmp} strokeWidth={2}
+              strokeDasharray="5 3" />
+          )}
+          <text x={xOf(wrongAt)} y={bars ? 14 : cellTop + cellH + 16} textAnchor="middle" fontSize={11}
+            fontWeight={700} fill={C.cmp} fontFamily="var(--mono)">
+            want {why!.expected_item}
           </text>
         </g>
       )}

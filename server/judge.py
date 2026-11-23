@@ -9,7 +9,7 @@ import sys
 import tempfile
 from functools import lru_cache
 
-from . import problems, tracer
+from . import problems, tracer, wrong
 
 JUDGE_RUNNER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "judge_runner.py")
 CASE_TIMEOUT = 2.0
@@ -298,7 +298,26 @@ def trace(code: str, problem: dict, args: list) -> dict:
         if s["ev"] == "return" and s["fn"] == fn:
             res["return_step"] = i
             break
+    if verdict["status"] == "wrong" and "return_step" in res:
+        why = _why_wrong(code, problem, args, res, verdict)
+        if why:
+            verdict["why"] = why
     return res
+
+
+def _why_wrong(code: str, problem: dict, args: list, res: dict, verdict: dict) -> dict | None:
+    ok, got = _value(verdict.get("got"))
+    if not ok:
+        return None
+    exp = expected(problem, args)
+    pool = res["pool"]
+    # the trace is deduplicated; the forensics want plain snapshots
+    steps = [{**s, "frames": [pool[f] for f in pool[s["frames"]]],
+              "heap": {k: pool[v] for k, v in pool[s["heap"]].items()}} for s in res["steps"]]
+    try:
+        return wrong.diagnose(problem, args, got, exp, steps, code, res["meta"], res["return_step"])
+    except Exception:  # forensics are a bonus; never break the run over them
+        return None
 
 
 # ---------------------------------------------------------------- API views

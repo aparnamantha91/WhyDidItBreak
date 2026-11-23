@@ -127,6 +127,23 @@ export interface Verdict {
   note?: string;
   stdout?: string;
   error?: { type: string; msg: string; line: number | null };
+  why?: WrongWhy;
+}
+
+/** Wrong-answer forensics: where the returned value went wrong. */
+export interface WrongWhy {
+  kind: "never_written" | "wrong_write" | "too_short" | "too_long" | "no_return" | "wrong_value";
+  summary: string;
+  detail: string[];
+  hint?: string;
+  line?: number | null;
+  jumps: { label: string; step: number; line?: number }[];
+  culprits: Culprit[];
+  var?: string;
+  oid?: string;
+  index?: number;
+  expected_item?: string;
+  got_item?: string;
 }
 
 export interface RunResult {
