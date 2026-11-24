@@ -114,3 +114,18 @@ def test_first_import_with_preview():
     preview = {}
     assert bank.import_specs([{**PLUS_ONE, "explain": ["123 + 1"]}], preview)["ready"] == 1
     assert preview["plus-one"][0] == "digits = [1, 2, 3] -> [1, 2, 4]   # 123 + 1"
+
+
+def test_export_then_load_into_fresh_db(tmp_path, monkeypatch):
+    bank.sync(LISTS)
+    bank.import_specs([PLUS_ONE])
+    with bank.db.connect() as c:
+        c.execute("UPDATE bank_problems SET status = 'skipped', skip_reason = 'x' WHERE id = 'big-countries'")
+    seed = tmp_path / "seed.jsonl"
+    assert bank.export(seed) == 3  # plus-one ready; big-countries and lru-cache skipped
+    monkeypatch.setenv("WDIB_DATA_DIR", str(tmp_path / "fresh"))  # a new machine: empty database, no sync
+    assert problems.by_id("plus-one") is None
+    assert bank.load_seed(seed) == 3
+    assert problems.by_id("plus-one")["fn"] == "plus_one"
+    assert bank.load_seed(seed) == 0  # nothing left to do
+    assert bank.status()["skipped"] == 2

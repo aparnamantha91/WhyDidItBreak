@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from contextlib import asynccontextmanager
 from functools import lru_cache
 
 from fastapi import FastAPI, HTTPException
@@ -12,7 +13,17 @@ from pydantic import BaseModel
 
 from . import bank, history, judge, lessons, problems, tracer
 
-app = FastAPI(title="WhyDidItBreak")
+@asynccontextmanager
+async def _lifespan(_app):
+    # the authored company problems ship in the repo; bring a fresh or older database up to date
+    try:
+        bank.load_seed()
+    except Exception as e:  # never keep the app from starting over it
+        print(f"bank seed not loaded: {e}")
+    yield
+
+
+app = FastAPI(title="WhyDidItBreak", lifespan=_lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=2000)
 
 DIST = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "dist")

@@ -10,6 +10,8 @@ cd <repo> && .venv/bin/python -m server.bank import ~/.whydidbreak/bank/out-NNNN
 
 The import prints `ready` / `skipped` / `failed` counts and an error for each failure. Fix the failures and import the same file again; importing again is safe. You're done when nothing fails.
 
+Finished problems are saved in the repo as `server/data/bank_problems.jsonl`. Whoever coordinates the batches runs `python -m server.bank export` after imports (batch writers don't, so that two exports never run at once). The server loads that file into the database on start, so a fresh clone gets every authored problem. Company tags still come from `python -m server.bank sync`.
+
 ## Content rules (important)
 
 - **Write everything in your own words.** Don't reproduce LeetCode's statement, examples, constraints or test data, even if you remember them. Describe the same underlying task plainly, with your own example values.

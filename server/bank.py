@@ -9,6 +9,8 @@ solution) authored for WhyDidItBreak, validated by running it, and stored next t
     python -m server.bank next [--n 25]      write the next batch of problems to author
     python -m server.bank import FILE...     validate authored specs and store the good ones
     python -m server.bank status             counts by status
+    python -m server.bank export             save authored problems to server/data/bank_problems.jsonl
+    python -m server.bank load               load that file into the database (done on server start too)
 """
 from __future__ import annotations
 
@@ -307,6 +309,63 @@ def status() -> dict:
     return {**{r["status"]: r["n"] for r in rows}, "companies": companies}
 
 
+# ---------------------------------------------------------------- seed file (kept in the repo)
+
+SEED = Path(__file__).parent / "data" / "bank_problems.jsonl"
+
+
+def export(path: Path = SEED) -> int:
+    """Write every authored or skipped problem to a JSON-lines file, one problem per line, sorted by id.
+
+    The authored specs are original content, so they live in the repo; the company tags don't (they come
+    from `sync`)."""
+    with db.connect() as conn:
+        rows = conn.execute("SELECT id, title, difficulty, topics, status, skip_reason, spec FROM bank_problems"
+                            " WHERE status IN ('ready', 'skipped') ORDER BY id").fetchall()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    with tmp.open("w") as f:
+        for r in rows:
+            item = {"id": r["id"], "title": r["title"], "difficulty": r["difficulty"],
+                    "topics": json.loads(r["topics"]), "status": r["status"]}
+            if r["status"] == "ready":
+                item["spec"] = json.loads(r["spec"])
+            else:
+                item["skip_reason"] = r["skip_reason"]
+            f.write(json.dumps(item, sort_keys=True) + "\n")
+    tmp.replace(path)
+    return len(rows)
+
+
+def load_seed(path: Path = SEED) -> int:
+    """Bring the database up to date with the seed file. Never overwrites a problem that is already ready."""
+    if not path.exists():
+        return 0
+    changed = 0
+    now = _now()
+    with db.connect() as conn:
+        have = {r["id"]: r["status"] for r in conn.execute("SELECT id, status FROM bank_problems")}
+        for line in path.read_text().splitlines():
+            if not line.strip():
+                continue
+            item = json.loads(line)
+            pid, cur = item["id"], have.get(item["id"])
+            if cur in ("ready", "builtin") or cur == item["status"]:
+                continue
+            spec = json.dumps(item["spec"]) if item.get("spec") else None
+            if cur is None:
+                conn.execute(
+                    "INSERT INTO bank_problems (id, title, difficulty, level, topics, status, skip_reason, spec,"
+                    " updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (pid, item["title"], item["difficulty"], LEVEL[item["difficulty"]], json.dumps(item["topics"]),
+                     item["status"], item.get("skip_reason"), spec, now))
+            else:
+                conn.execute("UPDATE bank_problems SET status = ?, skip_reason = ?, spec = ?, last_error = NULL,"
+                             " updated_at = ? WHERE id = ?", (item["status"], item.get("skip_reason"), spec, now, pid))
+            changed += 1
+    return changed
+
+
 # ---------------------------------------------------------------- reading (used by the server)
 
 def spec(problem_id: str) -> dict | None:
@@ -369,6 +428,8 @@ def main(argv: list[str] | None = None) -> None:
     i = sub.add_parser("import")
     i.add_argument("files", nargs="+")
     sub.add_parser("status")
+    sub.add_parser("export", help=f"write authored problems to {SEED.relative_to(SEED.parents[2])}")
+    sub.add_parser("load", help="load the seed file into the database (the server also does this on start)")
     a = ap.parse_args(argv)
 
     if a.cmd == "sync":
@@ -397,6 +458,10 @@ def main(argv: list[str] | None = None) -> None:
         print(json.dumps(res, indent=1))
     elif a.cmd == "status":
         print(json.dumps(status(), indent=1))
+    elif a.cmd == "export":
+        print(f"{export()} problems written to {SEED}")
+    elif a.cmd == "load":
+        print(f"{load_seed()} problems loaded from {SEED}")
 
 
 if __name__ == "__main__":
