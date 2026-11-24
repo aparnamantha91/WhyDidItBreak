@@ -33,7 +33,7 @@ export function Toolbar() {
       <button className="run-btn" onClick={s.run} disabled={s.running} title="Run (Ctrl/⌘ + Enter)">
         {s.running ? <span className="spinner small" /> : "▶"} Run
       </button>
-      {s.problem && (!s.viewing || s.viewing.kind === "solution") && (
+      {s.problem && (!s.viewing || s.viewing.kind === "solution" || s.viewing.kind === "replay") && (
         <select className="speed" value={s.testIndex} onChange={(e) => s.setTest(Number(e.target.value))} title="Which test Run traces">
           {Array.from({ length: s.submitRes && !s.submitRes.fatal ? s.problem.total : s.problem.cases.length }, (_, k) => (
             <option key={k} value={k}>
@@ -73,7 +73,10 @@ export function Toolbar() {
           💥 jump to crash
         </button>
       )}
-      {s.dirty && s.res && <span className="stale">changed — run again</span>}
+      {s.dirty && s.res && s.view === "studio" && <span className="stale">changed — run again</span>}
+      <button className={`learn-btn ${s.view === "learnings" ? "on" : ""}`} onClick={() => s.setView(s.view === "learnings" ? "studio" : "learnings")} title="Your progress, mistakes and run history">
+        📈 Learnings
+      </button>
     </div>
   );
 }

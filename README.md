@@ -39,12 +39,15 @@ Tests: `make test`
   - recursion as a live call tree
 - **Narration log and cost counters**: a running log of what each line did ("Swapped a[1] ↔ a[2]"), with the current step large at the bottom and earlier steps clickable, plus totals of comparisons, swaps, writes and calls.
 - **Playground**: run any Python, with no problem attached.
+- **Progress database**: every Run and Submit is recorded with what went wrong, along with your *active* time on each problem (only while the tab is focused and you've interacted in the last minute) and the active time it took to solve. Drafts are saved there too. It's a SQLite file at `~/.whydidbreak/progress.db` (set `WDIB_DATA_DIR` to move it), outside the repo, so rebuilds and fresh clones keep it. Reset one problem from its header, or everything from the Learnings page.
+- **📈 Learnings page**: solved count, active time, median time to solve, streak and a 30-day activity chart; your recurring mistakes grouped by kind (off-by-one, `None` pointers, missing return, …) with the rule to remember; a journal per problem with the diff that fixed it; and a filterable run log where any old run can be replayed in the visual debugger or restored into the editor. Export it all as Markdown.
 
 ## How it works
 
 - `server/runner.py` runs your code in a separate Python process under `sys.settrace`. It snapshots every frame and every reachable object at each step, and records which indexes each line is about to read. Limits are 3000 steps and 4 seconds.
 - `server/narrate.py` diffs consecutive snapshots into operations and narration. `server/explain.py` turns the exception into the error card. `server/tracer.py` deduplicates the trace.
 - `server/problems.py` holds the problems; `server/judge.py` wraps your function in a hidden test harness (so `ListNode`/`TreeNode` exist and line numbers stay yours), runs all tests untraced in `server/judge_runner.py`, and takes the expected answers from the reference solutions. `server/lessons.py` is the sample code.
+- `server/db.py` is the SQLite store (schema migrations via `PRAGMA user_version`); `server/history.py` records runs, categorises mistakes and builds the Learnings view.
 - `web/` is React, Vite, Monaco, D3 and Framer Motion. `src/detect.ts` decides how to draw each variable, and `src/viz/*` holds the renderers.
 
 > Code runs on your own machine with your user's permissions; the server binds to 127.0.0.1 only.

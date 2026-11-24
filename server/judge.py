@@ -98,8 +98,13 @@ def driver(problem: dict, args: list) -> str:
     kinds = problem.get("kinds", {})
     parts = [_BUILD.get(kinds.get(name, ""), "{}").format(repr(a))
              for name, a in zip(problem["params"], args)]
-    value = "__wdib_in__[0]" if problem.get("output") == "arg0" else "__wdib_out__"
-    value = _UNBUILD.get(problem.get("ret", ""), "{}").format(value)
+    ret = problem.get("ret")
+    if problem.get("output") == "arg0":
+        value = "__wdib_in__[0]"
+        ret = ret or kinds.get(problem["params"][0])  # a list or tree changed in place compares as a list
+    else:
+        value = "__wdib_out__"
+    value = _UNBUILD.get(ret or "", "{}").format(value)
     return (
         f"__wdib_in__ = [{', '.join(parts)}]\n"
         f"__wdib_out__ = {problem['fn']}(*__wdib_in__)\n"
@@ -345,4 +350,6 @@ def detail(problem: dict, lesson: dict | None) -> dict:
         "cases": cases,
         "total": len(problem["tests"]),
         "lesson": {k: lesson[k] for k in ("id", "title", "concept", "code", "buggy")} if lesson else None,
+        "difficulty": problem.get("difficulty"),
+        "topics": problem.get("topics", []),
     }

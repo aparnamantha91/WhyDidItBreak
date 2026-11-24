@@ -161,7 +161,9 @@ export interface ProblemInfo {
   id: string;
   title: string;
   level: string;
-  topic: string;
+  topic: string | null; // lesson id, when one fits
+  builtin: boolean; // part of the hand-made curriculum (vs the company bank)
+  companies: number[]; // indexes into the companies list from /api/problems
 }
 
 export interface ProblemCase {
@@ -171,7 +173,7 @@ export interface ProblemCase {
   explain: string | null;
 }
 
-export interface Problem extends ProblemInfo {
+export interface Problem extends Omit<ProblemInfo, "companies" | "builtin"> {
   statement: string;
   constraints: string[];
   hints: string[];
@@ -182,6 +184,96 @@ export interface Problem extends ProblemInfo {
   cases: ProblemCase[];
   total: number;
   lesson: { id: string; title: string; concept: string; code: string; buggy: string } | null;
+  companies: string[];
+  difficulty: string | null;
+  topics: string[];
+}
+
+export interface ProgressRow {
+  problem_id: string;
+  status: "tried" | "solved";
+  first_opened_at: string | null;
+  solved_at: string | null;
+  active_seconds: number;
+  seconds_to_solve: number | null;
+  runs: number;
+  submits: number;
+}
+
+export interface RunRecord {
+  id: number;
+  problem_id: string;
+  kind: "run" | "submit" | "watch";
+  created_at: string;
+  code?: string;
+  test_index: number | null;
+  custom_input: string | null;
+  status: "pass" | "wrong" | "error" | "timeout";
+  passed: number | null;
+  total: number | null;
+  error_type: string | null;
+  category: string | null;
+  title: string | null;
+  summary: string | null;
+  line: number | null;
+  active_seconds: number;
+  title_problem?: string;
+}
+
+export interface MistakeGroup {
+  category: string;
+  title: string;
+  lesson: string;
+  count: number;
+  recent: boolean;
+  last_at: string | null;
+  problems: { id: string; title: string }[];
+  examples: { run_id: number; problem_id: string; summary: string | null; line: number | null; created_at: string }[];
+}
+
+export interface JournalEntry {
+  problem_id: string;
+  title: string;
+  level: string | null;
+  status: "tried" | "solved";
+  active_seconds: number;
+  seconds_to_solve: number | null;
+  runs: number;
+  submits: number;
+  first_opened_at: string | null;
+  solved_at: string | null;
+  mistakes: string[];
+  timeline: { id: number; kind: RunRecord["kind"]; status: RunRecord["status"]; category: string | null; created_at: string; summary: string | null }[];
+  fix?: {
+    before: string;
+    after: string;
+    before_run: number;
+    after_run: number;
+    category: string | null;
+    title: string | null;
+    summary: string | null;
+    line: number | null;
+  };
+}
+
+export interface Learnings {
+  overview: {
+    total: number;
+    solved: number;
+    attempted: number;
+    active_seconds: number;
+    median_seconds_to_solve: number | null;
+    first_try: number;
+    streak: number;
+    daily: { day: string; minutes: number }[];
+    runs: number;
+    submits: number;
+  };
+  mistakes: MistakeGroup[];
+  journal: JournalEntry[];
+  log: RunRecord[];
+  categories: Record<string, { title: string; lesson: string }>;
+  db_path: string;
 }
 
 export interface SubmitRow extends Omit<Verdict, "status"> {
@@ -194,6 +286,7 @@ export interface SubmitResult {
   passed: number;
   total: number;
   fatal?: { type: string; title?: string; why?: string; hint?: string; msg: string };
+  code?: string; // client side: the code that was submitted, to tell when rows are out of date
 }
 
 export interface Snapshot {
