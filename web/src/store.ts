@@ -321,6 +321,16 @@ export const useStore = create<State>((set, get) => ({
     if (!problem) return;
     set({ submitting: true, viewing: null, playing: false, netError: null });
     try {
+      // report unsent active time first, so time-to-solve includes everything up to this submit
+      const pending = get().pendingActive;
+      if (pending) {
+        set({ pendingActive: 0 });
+        await fetch("/api/activity", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ problem_id: problem.id, seconds: pending }),
+        }).catch(() => set({ pendingActive: get().pendingActive + pending }));
+      }
       const r = await fetch("/api/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

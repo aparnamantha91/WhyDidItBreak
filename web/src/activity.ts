@@ -13,7 +13,8 @@ function active(): boolean {
     document.hasFocus() &&
     Date.now() - lastInput < IDLE_AFTER &&
     s.view === "studio" &&
-    !!s.problem
+    !!s.problem &&
+    s.progress[s.problem.id]?.status !== "solved" // the clock stops once the problem is solved
   );
 }
 

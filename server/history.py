@@ -189,6 +189,8 @@ def add_activity(problem_id: str, seconds: float) -> None:
         return
     with db.connect() as conn:
         _touch(conn, problem_id)
+        if conn.execute("SELECT status FROM progress WHERE problem_id = ?", (problem_id,)).fetchone()[0] == "solved":
+            return  # the clock stops once a problem is solved
         conn.execute("UPDATE progress SET active_seconds = active_seconds + ? WHERE problem_id = ?", (secs, problem_id))
         conn.execute("""INSERT INTO activity (problem_id, day, seconds) VALUES (?, ?, ?)
                         ON CONFLICT (problem_id, day) DO UPDATE SET seconds = seconds + excluded.seconds""",

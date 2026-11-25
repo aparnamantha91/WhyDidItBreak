@@ -55,8 +55,9 @@ def test_runs_progress_and_time_to_solve():
     _attempt(FIXED)
     p = history.progress()["problems"]["running-sum"]
     assert p["status"] == "solved" and p["seconds_to_solve"] == 62 and p["solved_at"]
-    history.add_activity("running-sum", 5)  # time after solving doesn't change time-to-solve
-    assert history.progress()["problems"]["running-sum"]["seconds_to_solve"] == 62
+    history.add_activity("running-sum", 5)  # the clock stops once solved
+    p = history.progress()["problems"]["running-sum"]
+    assert p["seconds_to_solve"] == 62 and p["active_seconds"] == 62
 
 
 @pytest.mark.parametrize("pid,code,category", [
