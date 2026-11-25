@@ -225,7 +225,7 @@ def validate(spec: dict) -> str | None:
     if spec.get("output") not in ("return", "arg0"):
         return f"unknown output mode {spec.get('output')!r}"
     for k in list((spec.get("kinds") or {}).values()) + [spec.get("ret")]:
-        if k not in (None, "linked", "tree"):
+        if k not in (None, "linked", "tree", "nary"):
             return f"unknown kind {k!r}"
     for code, what in ((spec["solution"], "solution"), (spec["starter"], "starter")):
         try:

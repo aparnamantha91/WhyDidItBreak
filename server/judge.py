@@ -79,6 +79,47 @@ def __wdib_untree__(root):
     return out
 
 
+class Node:
+    """An N-ary tree node (LeetCode's `Node`): a value and a list of children."""
+    def __init__(self, val=None, children=None):
+        self.val = val
+        self.children = children if children is not None else []
+
+
+def __wdib_nary__(vals):
+    # level order, with None closing each node's list of children: [1, None, 3, 2, 4, None, 5, 6]
+    if not vals or vals[0] is None:
+        return None
+    root = Node(vals[0], [])
+    queue = [root]
+    i = 2
+    while queue and i < len(vals):
+        node = queue.pop(0)
+        while i < len(vals) and vals[i] is not None:
+            child = Node(vals[i], [])
+            node.children.append(child)
+            queue.append(child)
+            i += 1
+        i += 1
+    return root
+
+
+def __wdib_unnary__(root):
+    if root is None:
+        return []
+    out = [getattr(root, "val", "?"), None]
+    queue = [root]
+    while queue and len(out) < 1000:
+        node = queue.pop(0)
+        for child in (getattr(node, "children", None) or []):
+            out.append(getattr(child, "val", "?"))
+            queue.append(child)
+        out.append(None)
+    while out and out[-1] is None:
+        out.pop()
+    return out
+
+
 def __wdib_norm__(v):
     if isinstance(v, (list, tuple)):
         return [__wdib_norm__(x) for x in v]
@@ -89,8 +130,8 @@ def __wdib_norm__(v):
     return v
 '''
 
-_BUILD = {"linked": "__wdib_ll__({})", "tree": "__wdib_tree__({})"}
-_UNBUILD = {"linked": "__wdib_unll__({})", "tree": "__wdib_untree__({})"}
+_BUILD = {"linked": "__wdib_ll__({})", "tree": "__wdib_tree__({})", "nary": "__wdib_nary__({})"}
+_UNBUILD = {"linked": "__wdib_unll__({})", "tree": "__wdib_untree__({})", "nary": "__wdib_unnary__({})"}
 
 
 def driver(problem: dict, args: list) -> str:

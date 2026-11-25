@@ -129,3 +129,42 @@ def test_export_then_load_into_fresh_db(tmp_path, monkeypatch):
     assert problems.by_id("plus-one")["fn"] == "plus_one"
     assert bank.load_seed(seed) == 0  # nothing left to do
     assert bank.status()["skipped"] == 2
+
+
+NARY_DEPTH = {
+    "id": "plus-one", "fn": "max_depth", "params": ["root"],  # reuses a bank row; only the spec matters here
+    "statement": "Return how many levels the N-ary tree has (0 for an empty tree).",
+    "solution": "def max_depth(root):\n    if root is None:\n        return 0\n"
+                "    return 1 + max((max_depth(c) for c in root.children), default=0)\n",
+    "tests": [[[1, None, 3, 2, 4, None, 5, 6]], [[]], [[7]], [[1, None, 2, None, 3, None, 4]],
+              [[1, None, 2, 3, 4, 5]], [[1, None, 2, 3, None, 4, None, 5]]],
+    "kinds": {"root": "nary"},
+}
+
+
+def test_nary_trees_build_judge_and_trace():
+    from server import judge
+
+    bank.sync(LISTS)
+    res = bank.import_specs([NARY_DEPTH], preview := {})
+    assert res["ready"] == 1, res
+    assert [ln.split(" -> ")[1] for ln in preview["plus-one"]] == ["3", "0", "1"]
+    p = problems.by_id("plus-one")
+    assert "class Node:" in p["starter"]
+    flat = "def max_depth(root):\n    return 1 if root else 0\n"  # forgets to go down
+    r = judge.submit(flat, p)
+    assert r["passed"] == 2 and r["total"] == 6  # only the empty tree and the single node
+    t = judge.trace(NARY_DEPTH["solution"], p, p["tests"][0])
+    assert t["verdict"]["status"] == "pass" and not t.get("error")
+
+
+def test_nary_round_trip_as_return_value():
+    from server import judge
+
+    spec = {**NARY_DEPTH, "fn": "same", "solution": "def same(root):\n    return root\n", "ret": "nary"}
+    bank.sync(LISTS)
+    assert bank.import_specs([spec])["ready"] == 1
+    judge._expected.cache_clear()  # the previous test cached answers under the same problem id
+    p = problems.by_id("plus-one")
+    for args in p["tests"]:  # serialising the built tree gives back exactly the input
+        assert judge.expected(p, args) == args[0]

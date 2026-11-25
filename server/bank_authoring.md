@@ -57,6 +57,7 @@ To skip a problem that doesn't fit, use `{"id": "...", "skip": "short reason"}`.
 - A linked-list param is written as a plain list, `[1, 2, 3]`, and needs `"kinds": {"head": "linked"}`.
 - A tree param uses level-order with `null` for gaps, `[3, 9, 20, null, null, 15, 7]`, and needs `"kinds": {"root": "tree"}`.
 - If the function returns a node, set `"ret": "linked"` or `"ret": "tree"`. The answer is then compared as a list.
+- An N-ary tree (`Node(val, children)`, already defined) uses `"kinds": {"root": "nary"}` / `"ret": "nary"`, written in level order with `null` closing each node's list of children: `[1, null, 3, 2, 4, null, 5, 6]` is 1 with children 3, 2, 4, and 3 with children 5, 6.
 - Only a parameter that is **one** list or tree can use `kinds`. A list of linked lists or trees (merge k lists, for example) isn't supported, so take plain Python lists instead and say so in the statement.
 - Cycles, random pointers and parent pointers can't be expressed this way, so skip those problems.
 
@@ -82,4 +83,4 @@ Many problems can be rephrased as a pure function. Prefer adapting over skipping
 - **Graph-node problems:** pass an adjacency list.
 - **Design or class problems:** usually skip. Skip when the operations are the whole point (LRU cache, iterators, `Codec`). Simple ones may become a function that takes a list of operations and returns the list of results, but only if it reads naturally.
 - **Skip when you don't know the problem.** If you aren't confident what the task behind a title actually asks (common for newer contest problems), skip it with `"skip": "unsure of the problem"`. Don't invent a different problem under that title: students practise these because a company asked that exact one.
-- **Skip outright:** randomness, threads, SQL or shell, N-ary or graph `Node` classes, `NestedInteger` and other custom APIs, problems whose answer can't be pinned down, and anything that needs huge inputs to be meaningful.
+- **Skip outright:** randomness, threads, SQL or shell, graph `Node` classes (with `neighbors`), `NestedInteger` and other custom APIs, problems whose answer can't be pinned down, and anything that needs huge inputs to be meaningful.

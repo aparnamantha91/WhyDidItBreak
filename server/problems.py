@@ -23,13 +23,22 @@ _TREE_NOTE = '''\
 #         self.right = right
 
 '''
+_NARY_NOTE = '''\
+# An N-ary tree node (already defined for you):
+# class Node:
+#     def __init__(self, val=None, children=None):
+#         self.val = val
+#         self.children = children   # a list of Node
+
+'''
 
 
 def P(id, title, level, topic, fn, params, statement, solution, tests, *, visible=3, constraints=(),
       hints=(), explain=(), compare="exact", output="return", kinds=None, ret=None, returns=None):
     kinds = kinds or {}
     used = set(kinds.values()) | ({ret} if ret else set())
-    note = (_LINKED_NOTE if "linked" in used else "") + (_TREE_NOTE if "tree" in used else "")
+    note = ((_LINKED_NOTE if "linked" in used else "") + (_TREE_NOTE if "tree" in used else "")
+            + (_NARY_NOTE if "nary" in used else ""))
     what = returns or ("Change the input in place; nothing needs to be returned." if output == "arg0"
                        else "Return the answer.")
     starter = f"{note}def {fn}({', '.join(params)}):\n    # Write your solution here. {what}\n    pass\n"

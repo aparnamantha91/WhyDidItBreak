@@ -227,7 +227,7 @@ def diagnose(problem: dict, args: list, got, exp, steps: list[dict], code: str, 
     oid = ans_val["r"] if ans_val.get("t") == "ref" else None
     obj = ret["heap"].get(oid) if oid else None
     if (oid and obj and obj.get("t") == "list" and isinstance(got, list) and isinstance(exp, list)
-            and not unordered and problem.get("ret") not in ("linked", "tree")):
+            and not unordered and problem.get("ret") not in ("linked", "tree", "nary")):
         names = _refs_to(frame, oid) if frame else []
         if ans_name and ans_name not in names:
             names.append(ans_name)
